@@ -4,6 +4,7 @@
 # asclassifying any vector of numbers.
 
 library(neuralnet)
+library(MLmetrics)
 
 ########################
 ## Introduction and Data
@@ -103,6 +104,23 @@ test <- df[592:740,]
 # define the formula
 f <- as.formula(paste('label ~', paste(colnames(df[,1:1024]), collapse = " + ")))
 
+
+# Fit our first model
+# train the network
+set.seed(123)
+nn <- neuralnet(f, 
+                data=train,
+                stepmax = 50, # the maximum number of training steps. Setting it at 50 for this model to limit run time
+                learningrate.factor = list(minus = 1, plus = 2), # try adjusting the learning rate if your model doesn't converge
+                hidden = c(128, 32, 8), # The hidden layers a number of neurons in each
+                linear.output = FALSE, # The type of output. True for regression tasks, False for classification
+                algorithm = 'rprop+', # The algorith for calculating the network
+                act.fct = 'logistic' # The activation function used between neurons                
+                )
+
+# This model failoed to converge. This can often happen if your network is too large/small or if the learning rate
+# is too large. Let's try simplifying the network and turning down the learning rate
+
 # train the network
 set.seed(123)
 nn <- neuralnet(f, 
@@ -137,19 +155,67 @@ r_df$correct <- ifelse(r_df$pred == r_df$actual, 1, 0)
 # calculate the accuracy of predictions
 sum(r_df$correct)/nrow(r_df)
 
+# print the confusion matrix as well as preformance metrics
+ConfusionMatrix(y_pred= r_df$pred, y_true = r_df$actual)
+
+AUC(y_pred= r_df$pred, y_true = r_df$actual)
+PRAUC(y_pred= r_df$prob, y_true = r_df$actual)
+
+# this model fit pretty well. For the sake of demonstration, lets try fitting a simpler model with a single hidden layer
+# define the formula
+f <- as.formula(paste('label ~', paste(colnames(df[,1:1024]), collapse = " + ")))
+
+# train the network
+set.seed(123)
+nn <- neuralnet(f, 
+                data=train,
+                stepmax = 1e+05, # the maximum number of training steps
+                learningrate.factor = list(minus = 0.5, plus = 1.2), # try adjusting the learning rate if your model doesn't converge
+                hidden = c(64), # The hidden layers a number of neurons in each
+                linear.output = FALSE, # The type of output. True for regression tasks, False for classification
+                algorithm = 'rprop+', # The algorith for calculating the network
+                act.fct = 'logistic' # The activation function used between neurons                
+                )
+
+# this provides a quick view of the training results
+head(nn$result.matrix)
+
+# drop the label from the test set so the network can predict it
+nn_test <- subset(test, select=-c(label))
+
+# predict labels for the test set
+results <- predict(nn, nn_test)
+
+# Create a data frame of true labels and results
+r_df <- data.frame(actual=test$label, prob = results)
+
+# If the predicted value is over, .5 label happy happy, otherwise angry
+r_df$pred <- ifelse(r_df$prob > 0.5, 1, 0)
+# flag correct predictions
+r_df$correct <- ifelse(r_df$pred == r_df$actual, 1, 0)
+# calculate the accuracy of predictions
+sum(r_df$correct)/nrow(r_df)
+
+ConfusionMatrix(y_pred= r_df$pred, y_true = r_df$actual)
+
+AUC(y_pred= r_df$pred, y_true = r_df$actual)
+PRAUC(y_pred= r_df$prob, y_true = r_df$actual)
+
+#This model failed to learn anything. Effective training is about finding the right balance of complexity, 
+# learning rate, and training times.
 
 ###########################
 ## Tensorflow with Keras
 ###########################
 
 # Run these commands in a console in order to install Tensorflow with Keras
-install.packages('tensorflow')
-library(tensorflow)
-install_tensorflow()
+#install.packages('tensorflow')
+#library(tensorflow)
+#install_tensorflow()
 
-install.packages('keras')
-library(tensorflow)
-install_tensorflow()
+#install.packages('keras')
+#library(tensorflow)
+#install_tensorflow()
 
 # once installed, we can just import keras and everything it needs from
 # tensorflow will come with it.
