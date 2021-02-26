@@ -93,7 +93,7 @@ write.csv(df, 'pixels.csv')
 df <- read.csv('pixels.csv')
 # this will randomize the order of the data
 set.seed(123)
-df <- df[sample(1:width(df)),]
+df <- df[sample(1:nrow(df)),]
 
 # now divide the data in to training and test sets. I use an 80:20 split
 train <- df[1:592,]
@@ -101,12 +101,22 @@ test <- df[592:740,]
 
 
 # define the formula
-f <- as.formula(paste('label ~', paste(col_names, collapse = " + ")))
+f <- as.formula(paste('label ~', paste(colnames(df[,1:1024]), collapse = " + ")))
 
 # train the network
 set.seed(123)
-nn <- neuralnet(f, data=train, hidden = c(128, 16, 8), linear.output = FALSE)
+nn <- neuralnet(f, 
+                data=train,
+                stepmax = 1e+05, # the maximum number of training steps
+                learningrate.factor = list(minus = 0.5, plus = 1.2), # try adjusting the learning rate if your model doesn't converge
+                hidden = c(128, 32, 8), # The hidden layers a number of neurons in each
+                linear.output = FALSE, # The type of output. True for regression tasks, False for classification
+                algorithm = 'rprop+', # The algorith for calculating the network
+                act.fct = 'logistic' # The activation function used between neurons                
+                )
 
+# this provides a quick view of the training results
+head(nn$result.matrix)
 
 # Now lets see how the model preforms by making predictions on our test set. 
 # The model will assign a continuous value rather than a binary classification for each observation.
@@ -125,7 +135,7 @@ r_df$pred <- ifelse(r_df$prob > 0.5, 1, 0)
 # flag correct predictions
 r_df$correct <- ifelse(r_df$pred == r_df$actual, 1, 0)
 # calculate the accuracy of predictions
-sum(r_df$correct)/width(r_df)
+sum(r_df$correct)/nrow(r_df)
 
 
 ###########################
