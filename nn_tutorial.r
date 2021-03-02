@@ -3,6 +3,7 @@
 # with one stone: Classifying audio data is the same as classifying images, which is the same
 # asclassifying any vector of numbers.
 
+library(here)
 library(neuralnet)
 library(MLmetrics)
 
@@ -25,7 +26,7 @@ library(imager)
 # For classification, audio is converted to an image of a mel spectrogram. 
 
 # load a sample image with imager
-sample <- load.image('happy/H_OAF_back.png')
+sample <- load.image(here('happy/H_OAF_back.png'))
 plot(sample)
 
 # The image is actually just a vector of numeric pixel values.
@@ -45,7 +46,7 @@ dim1 <- 32
 dim2 <- 32
 
 # list images in the happy directory
-happy <- list.files('happy', full.names=T)
+happy <- list.files(here('happy'), full.names=T)
 # instantiate the data frame
 happy_df <- data.frame()
 # generate column names for the data frame based on the number of pixels in the image
@@ -64,7 +65,7 @@ happy_df$label <- 1
 
 
 # Now repeat the above for the angry spectrograms
-angry <- list.files('angry', full.names=T)
+angry <- list.files(here('angry'), full.names=T)
 # instantiate the data frame
 angry_df <- data.frame()
 # generate column names
@@ -231,6 +232,8 @@ img_size <- c(32, 32)
 # If your computer runs out of memory while training the model, try lowering the batch size.
 batch_size <- 32
 
+library(reticulate)
+use_virtualenv(here("nnr_tutorial"), required = T)
 
 # Data Generator for Training Set. Keras infers the labels for the data based on the directory
 train_image_array_gen <- flow_images_from_directory(directory = paste0(getwd(),"/keras/training/"),
